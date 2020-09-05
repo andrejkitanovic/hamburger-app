@@ -22,13 +22,17 @@ const Orders = (props) => {
         }
         setLoading(true);
         setOrders(fetchOrders);
-        console.log(fetchOrders)
+        // console.log(fetchOrders)
       })
       .catch((error) => {
         console.log(error);
         setLoading(false);
       });
   },[]);
+
+  if(loading){
+    return null
+  }
 
   return (
     <div>

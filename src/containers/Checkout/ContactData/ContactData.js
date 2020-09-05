@@ -3,63 +3,191 @@ import classes from "./ContactData.module.scss";
 
 import Spinner from "../../../components/UI/Spinner/Spinner";
 import Button from "../../../components/UI/Button/Button";
+import Input from "../../../components/UI/Input/Input";
 import axios from "../../../axios-orders";
 
+import {connect} from 'react-redux'
 const ContactData = (props) => {
-  const [information, setInformation] = useState({
-    name: "",
-    email: "",
-    adress: {
-      street: "",
-      postalCode: "",
+  const [orderForm, setOrderForm] = useState({
+    // customer: {
+    name: {
+      elementType: "input",
+      elementConfig: {
+        type: "text",
+        placeholder: "Your Name",
+      },
+      value: "",
+      validation: {
+        required: true
+      },
+      valid:false,
+      touched:false
     },
+    street: {
+      elementType: "input",
+      elementConfig: {
+        type: "text",
+        placeholder: "Street",
+      },
+      value: "",
+      validation: {
+        required: true
+      },
+      valid:false,
+      touched:false
+    },
+    zipCode: {
+      elementType: "input",
+      elementConfig: {
+        type: "text",
+        placeholder: "ZIP Code",
+      },
+      value: "",
+      validation: {
+        required: true,
+        minLength:5,
+        maxLength:5
+      },
+      valid:false,
+      touched:false
+    },
+    country: {
+      elementType: "input",
+      elementConfig: {
+        type: "text",
+        placeholder: "Country",
+      },
+      value: "",
+      validation: {
+        required: true
+      },
+      valid:false,
+      touched:false
+    },
+    email: {
+      elementType: "input",
+      elementConfig: {
+        type: "email",
+        placeholder: "Your E-Mail",
+      },
+      value: "",
+      validation: {
+        required: true
+      },
+      valid:false,
+      touched:false
+    },
+    deilveryMethod: {
+      elementType: "select",
+      elementConfig: {
+        option: [
+          { value: "fastest", displayValue: "Fastest" },
+          { value: "cheapest", displayValue: "Cheapest" },
+        ],
+      },
+      value: "fastest",
+      validation:{},
+      valid:true
+    }
   });
+  const [formIsValid,setFormIsValid] = useState(false)
   const [loading, setLoading] = useState(false);
 
   const orderHandler = (e) => {
     e.preventDefault();
-    console.log(props.ingredients);
-
     setLoading(true);
 
+    const formData = {};
+    for (let formElement in orderForm){
+      formData[formElement] = orderForm[formElement].value
+    }
+
     const order = {
-      ingredients: props.ingredients,
+      ingredients: props.ings,
       totalPrice: props.price,
-      customer: {
-        name: "Andrej Kitanovic",
-        address: {
-          street: "Ulica 12",
-          zipCode: "18000",
-          country: "Serbia",
-        },
-        email: "kitanovicandrej213@gmail.com",
-      },
-      deilveryMethod: "fastest",
+      orderData: formData,
     };
 
     axios
       .post("/orders.json", order)
       .then((response) => {
-          setLoading(false)
-            props.history.push('/orders')
-        })
+        setLoading(false);
+        props.history.push("/orders");
+      })
       .catch((error) => setLoading(false));
   };
 
+  const formElementsArray = [];
+  for (let key in orderForm) {
+    // console.log(orderForm[key]);
+    formElementsArray.push({
+      id: key,
+      config: orderForm[key],
+    });
+  }
+
+  const checkValidity = (value,rules) => {
+    let isValid = true;
+
+
+      if(rules.required){
+        isValid = value.trim() !== '' && isValid;
+      }
+  
+      if(rules.minLength) {
+        isValid = value.length >= rules.minLength  && isValid;
+      }
+  
+      if(rules.maxLength) {
+        isValid = value.length <= rules.maxLength && isValid;
+      }
+  
+
+    return isValid
+  }
+
+  const inputChangedHandler = (e, inputIndentifer) => {
+    const updatedOrderForm = { ...orderForm };
+    const updatedFormElement = {...updatedOrderForm[inputIndentifer]}
+    updatedFormElement.value = e.target.value
+    updatedFormElement.valid = checkValidity(updatedFormElement.value,updatedFormElement.validation)
+    updatedFormElement.touched = true;
+    console.log(updatedFormElement)
+    updatedOrderForm[inputIndentifer] = updatedFormElement
+    setOrderForm({...updatedOrderForm}) 
+
+    let formIsValid = true;
+    for(let inputIdentifier in updatedOrderForm) {
+      // if(updatedOrderForm[inputIdentifier].valid !== undefined){
+        formIsValid = updatedOrderForm[inputIdentifier].valid && formIsValid
+      // }
+     
+    }
+    setFormIsValid(formIsValid)
+  };
+
   let form = (
-    <form>
-      <input type="text" name="name" placeholder="Your name" />
-      <input type="email" name="email" placeholder="Your email" />
-      <input type="text" name="street" placeholder="Street" />
-      <input type="text" name="postal" placeholder="Postal Code" />
-      <Button btnType="Success" clicked={orderHandler}>
+    <form onSubmit={orderHandler}>
+      {formElementsArray.map((formElement) => (
+        <Input
+          key={formElement.id}
+          elementType={formElement.config.elementType}
+          elementConfig={formElement.config.elementConfig}
+          value={formElement.config.value}
+          changed={(event) => inputChangedHandler(event, formElement.id)}
+          invalid={!formElement.config.valid}
+          shouldValidate={formElement.config.validation}
+          touched={formElement.config.touched}
+        />
+      ))}
+      <Button btnType="Success" disabled={!formIsValid}>
         ORDER
       </Button>
     </form>
   );
 
-  if(loading){
-      form = <Spinner />
+  if (loading) {
+    form = <Spinner />;
   }
 
   return (
@@ -70,4 +198,11 @@ const ContactData = (props) => {
   );
 };
 
-export default ContactData;
+const mapStateToProps = state => {
+  return {
+    ings:state.ingredients,
+    price:state.totalPrice
+  }
+}
+
+export default connect(mapStateToProps,null)(ContactData);
