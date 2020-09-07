@@ -6,6 +6,7 @@ import NavigationItems from "../NavigationItems/NavigationItems";
 import Backdrop from "../../UI/Backdrop/Backdrop";
 import Aux from "../../../hoc/Auxiliry/Auxiliry";
 
+import {connect} from 'react-redux'
 const sideDrawer = (props) => {
   const attachedClasses = [classes.SideDrawer, classes.Close];
 
@@ -16,16 +17,22 @@ const sideDrawer = (props) => {
   return (
     <Aux>
       <Backdrop show={props.open} clicked={props.closed} />
-      <div className={attachedClasses.join(' ')}>
+      <div className={attachedClasses.join(' ')} onClick={props.closed}>
         <div className={classes.Logo}>
           <Logo />
         </div>
         <nav>
-          <NavigationItems />
+          <NavigationItems isAuth={props.isAuth}/>
         </nav>
       </div>
     </Aux>
   );
 };
 
-export default sideDrawer;
+const mapStateToProps = state => {
+  return {
+    isAuth:state.auth.token !== null
+  }
+}
+
+export default connect(mapStateToProps)(sideDrawer);

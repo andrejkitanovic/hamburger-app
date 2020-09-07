@@ -1,37 +1,59 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Layout from "./hoc/Layout/Layout";
+
+import { BrowserRouter, Switch, Route, Redirect } from "react-router-dom";
+import { connect } from "react-redux";
+import { authCheckState } from "./store/actions/index";
 
 import BurgerBuilder from "./containers/BurgerBuilder/BurgerBuilder";
 import Checkout from "./containers/Checkout/Checkout";
 import Orders from "./containers/Orders/Orders";
-
-import { BrowserRouter, Switch, Route } from "react-router-dom";
-import { Provider } from "react-redux";
-import { createStore , applyMiddleware, compose} from "redux";
-
-import reducer from './store/reducers/burgerBuilder'
-import thunk from 'redux-thunk'
-
-// const store = createStore(reducer ,  window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__())
-
-const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
-const store = createStore(reducer, composeEnhancers( applyMiddleware(thunk)));
+import Auth from "./containers/Auth/Auth";
+import Logout from "./containers/Auth/Logout/Logout";
 
 
-const App = () => {
+const App = (props) => {
+  useEffect(() => {
+    const method = props.authCheckState
+    method()
+    
+  }, [props.authCheckState]);
+
+  let routes = (
+    <Switch>
+      <Route path="/" exact component={BurgerBuilder} />
+      <Route path="/auth" component={Auth} />
+    </Switch>
+  );
+
+  if (props.isAuthenticated) {
+    routes = (
+      <Switch>
+        <Route path="/" exact component={BurgerBuilder} />
+        <Route path="/auth" component={Auth} />
+        <Route path="/orders" component={Orders} />
+        <Route path="/checkout" component={Checkout} />
+        <Route path="/logout" component={Logout} />
+      </Switch>
+    );
+  }
+
   return (
-    <Provider store={store}>
-      <BrowserRouter>
-        <Layout>
-          <Switch>
-            <Route path="/" exact component={BurgerBuilder} />
-            <Route path="/orders" component={Orders} />
-            <Route path="/checkout" component={Checkout} />
-          </Switch>
-        </Layout>
-      </BrowserRouter>
-    </Provider>
+    <BrowserRouter>
+      <Layout>
+        {routes}
+        <Redirect to="/" />
+      </Layout>
+    </BrowserRouter>
   );
 };
 
-export default App;
+const mapStateToProps = (state) => {
+  return {
+    isAuthenticated: state.auth.token !== null,
+  };
+};
+
+const mapDispatchToProps = { authCheckState };
+
+export default connect(mapStateToProps, mapDispatchToProps)(App);
